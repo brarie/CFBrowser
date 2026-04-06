@@ -2,6 +2,8 @@
 
 Codeforces 문제 브라우저. 단일 HTML 파일로 동작, 설치 불필요.
 
+주소: https://brarie.github.io/CFBrowser/
+
 ## 기능
 
 - **문제 필터링** — 난이도(rating), 대회 유형(Div.1/2/3/4, Educational, Global), 문제 인덱스(A~H), 풀이 여부
