@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CF Problem Browser</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #222635;
+      --border: #2e3348;
+      --accent: #5b8cff;
+      --accent-hover: #7aa3ff;
+      --solved: #3fb950;
+      --unsolved: #f85149;
+      --attempted: #d29922;
+      --text: #e6edf3;
+      --text-secondary: #7d8590;
+      --text-muted: #484f58;
+      --div1: #ff7b72;
+      --div2: #79c0ff;
+      --div3: #56d364;
+      --div4: #bc8cff;
+      --edu: #ffa657;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    header h1 { font-size: 18px; font-weight: 700; color: var(--accent); letter-spacing: -0.3px; }
+    .handle-area { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    .handle-area input {
+      background: var(--bg); border: 1px solid var(--border); color: var(--text);
+      padding: 6px 12px; border-radius: 6px; font-size: 13px; width: 140px;
+      transition: border-color 0.15s; outline: none;
+    }
+    .handle-area input:focus { border-color: var(--accent); }
+    .btn {
+      background: var(--accent); color: #fff; border: none; padding: 6px 14px;
+      border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .btn:hover { background: var(--accent-hover); }
+    .btn:active { transform: scale(0.97); }
+    .btn.secondary { background: var(--surface2); border: 1px solid var(--border); color: var(--text); }
+    .btn.secondary:hover { background: var(--border); }
+
+    .layout { display: flex; min-height: calc(100vh - 53px); }
+
+    aside {
+      width: 240px; min-width: 240px; background: var(--surface);
+      border-right: 1px solid var(--border); padding: 16px;
+      overflow-y: auto; display: flex; flex-direction: column; gap: 20px;
+    }
+    .filter-group h3 {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.8px; color: var(--text-secondary); margin-bottom: 10px;
+    }
+
+    .rating-inputs { display: flex; gap: 8px; align-items: center; }
+    .rating-inputs input[type="number"] {
+      background: var(--bg); border: 1px solid var(--border); color: var(--text);
+      padding: 6px 8px; border-radius: 6px; font-size: 13px; width: 75px;
+      -moz-appearance: textfield; outline: none;
+    }
+    .rating-inputs input[type="number"]::-webkit-outer-spin-button,
+    .rating-inputs input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .rating-inputs input:focus { border-color: var(--accent); }
+    .rating-inputs span { color: var(--text-secondary); font-size: 12px; }
+
+    .toggle-group { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+    .toggle-btn {
+      flex: 1; padding: 6px 0; background: transparent; border: none;
+      color: var(--text-secondary); cursor: pointer; font-size: 12px; font-weight: 500;
+      transition: background 0.15s, color 0.15s;
+    }
+    .toggle-btn:not(:last-child) { border-right: 1px solid var(--border); }
+    .toggle-btn.active { background: var(--accent); color: #fff; }
+
+    .check-list { display: flex; flex-direction: column; gap: 6px; }
+    .check-item { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 3px 0; user-select: none; }
+    .check-item input[type="checkbox"] { display: none; }
+    .checkmark {
+      width: 16px; height: 16px; border: 1px solid var(--border); border-radius: 4px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .check-item input:checked ~ .checkmark { background: var(--accent); border-color: var(--accent); }
+    .checkmark::after {
+      content: ''; width: 9px; height: 5px;
+      border-left: 2px solid #fff; border-bottom: 2px solid #fff;
+      transform: rotate(-45deg) translateY(-1px); opacity: 0;
+    }
+    .check-item input:checked ~ .checkmark::after { opacity: 1; }
+    .check-label { font-size: 13px; color: var(--text); }
+    .div-badge { font-size: 10px; padding: 1px 5px; border-radius: 3px; font-weight: 600; margin-left: auto; }
+
+    .index-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+    .idx-btn {
+      padding: 5px 0; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 4px; color: var(--text-secondary); cursor: pointer;
+      font-size: 12px; font-weight: 600; text-align: center; transition: all 0.15s;
+    }
+    .idx-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    .switch-row { display: flex; align-items: center; justify-content: space-between; }
+    .switch-label { font-size: 13px; color: var(--text); }
+    .switch { position: relative; width: 36px; height: 20px; }
+    .switch input { display: none; }
+    .switch-slider {
+      position: absolute; inset: 0; background: var(--border);
+      border-radius: 10px; cursor: pointer; transition: background 0.2s;
+    }
+    .switch-slider::before {
+      content: ''; position: absolute; width: 14px; height: 14px;
+      background: #fff; border-radius: 50%; top: 3px; left: 3px; transition: transform 0.2s;
+    }
+    .switch input:checked + .switch-slider { background: var(--accent); }
+    .switch input:checked + .switch-slider::before { transform: translateX(16px); }
+
+    main { flex: 1; padding: 16px 20px; overflow: hidden; min-width: 0; }
+
+    /* ── Tab Navigation ─────────────────────────────────────────────────── */
+    .tab-nav {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+    .tab-btn {
+      padding: 8px 20px;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.15s;
+      margin-bottom: -1px;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ── Problems Tab ───────────────────────────────────────────────────── */
+    .stats-bar { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; color: var(--text-secondary); font-size: 13px; }
+    .stats-bar strong { color: var(--text); }
+
+    .table-wrap { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: var(--surface2); }
+    th {
+      padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-secondary);
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+    .status-dot.solved { background: var(--solved); }
+    .status-dot.attempted { background: var(--attempted); }
+    .status-dot.unsolved { background: var(--text-muted); }
+
+    .contest-name {
+      font-size: 12px; color: var(--text-secondary); max-width: 280px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .contest-div { display: inline-block; font-size: 10px; padding: 1px 5px; border-radius: 3px; font-weight: 600; margin-left: 4px; vertical-align: middle; }
+    .cdiv1 { background: rgba(255,123,114,0.15); color: var(--div1); }
+    .cdiv2 { background: rgba(121,192,255,0.15); color: var(--div2); }
+    .cdiv12 { background: rgba(121,192,255,0.1); color: #a0c8ff; }
+    .cdiv3 { background: rgba(86,211,100,0.15); color: var(--div3); }
+    .cdiv4 { background: rgba(188,140,255,0.15); color: var(--div4); }
+    .cedu { background: rgba(255,166,87,0.15); color: var(--edu); }
+    .cother { background: rgba(125,133,144,0.15); color: var(--text-secondary); }
+
+    .problem-link { color: var(--text); text-decoration: none; font-weight: 500; transition: color 0.15s; }
+    .problem-link:hover { color: var(--accent); }
+    .problem-link.solved-link { color: var(--solved); }
+    .problem-link.attempted-link { color: var(--attempted); }
+    .prob-index { display: inline-block; width: 24px; font-weight: 700; color: var(--accent); font-size: 13px; }
+    .rating-badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 7px; border-radius: 4px; }
+
+    .loading-wrap, .empty-wrap {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 60px 20px; color: var(--text-secondary); gap: 12px;
+    }
+    .spinner {
+      width: 32px; height: 32px; border: 3px solid var(--border);
+      border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-msg { font-size: 13px; }
+
+    .pagination { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 16px; }
+    .page-btn {
+      padding: 5px 10px; background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); border-radius: 5px; cursor: pointer; font-size: 13px;
+      transition: all 0.15s; min-width: 36px; text-align: center;
+    }
+    .page-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .page-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .page-info { font-size: 12px; color: var(--text-secondary); padding: 0 8px; }
+
+    .error-bar {
+      background: rgba(248,81,73,0.1); border: 1px solid rgba(248,81,73,0.3);
+      color: var(--unsolved); padding: 10px 14px; border-radius: 6px;
+      margin-bottom: 12px; font-size: 13px;
+    }
+    .cache-info { font-size: 11px; color: var(--text-muted); }
+
+    /* ── Weekly Goal ────────────────────────────────────────────────────── */
+    .goal-inputs { display: flex; flex-direction: column; gap: 8px; }
+    .goal-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+    .goal-row input[type="number"] {
+      background: var(--bg); border: 1px solid var(--border); color: var(--text);
+      padding: 5px 7px; border-radius: 5px; font-size: 13px; width: 58px;
+      -moz-appearance: textfield; outline: none;
+    }
+    .goal-row input::-webkit-outer-spin-button,
+    .goal-row input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .goal-row input:focus { border-color: var(--accent); }
+    .btn-pick {
+      width: 100%; padding: 7px;
+      background: linear-gradient(135deg, #5b8cff, #9b59ff);
+      color: #fff; border: none; border-radius: 6px; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: opacity 0.15s, transform 0.1s; letter-spacing: 0.3px;
+    }
+    .btn-pick:hover { opacity: 0.88; }
+    .btn-pick:active { transform: scale(0.97); }
+
+    .goal-panel {
+      border: 1px solid #5b8cff44; border-radius: 8px; margin-bottom: 16px;
+      overflow: hidden; background: linear-gradient(180deg, #1a1d35 0%, var(--surface) 100%);
+    }
+    .goal-header { display: flex; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--border); gap: 10px; }
+    .goal-title { font-size: 13px; font-weight: 600; color: var(--text); }
+    .goal-progress-text { font-size: 12px; color: var(--text-secondary); }
+    .goal-progress-bar-wrap { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .goal-progress-bar { height: 100%; background: linear-gradient(90deg, #5b8cff, #3fb950); border-radius: 3px; transition: width 0.4s ease; }
+    .goal-clear-btn {
+      background: none; border: 1px solid var(--border); color: var(--text-muted);
+      padding: 3px 9px; border-radius: 4px; font-size: 11px; cursor: pointer; transition: all 0.15s;
+    }
+    .goal-clear-btn:hover { border-color: var(--unsolved); color: var(--unsolved); }
+    .goal-reroll-btn {
+      background: none; border: 1px solid var(--border); color: var(--text-muted);
+      padding: 3px 9px; border-radius: 4px; font-size: 11px; cursor: pointer; transition: all 0.15s;
+    }
+    .goal-reroll-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .goal-problems { display: flex; flex-direction: column; }
+    .goal-problem-row {
+      display: flex; align-items: center; padding: 9px 14px; gap: 10px;
+      border-bottom: 1px solid var(--border); transition: background 0.15s;
+    }
+    .goal-problem-row:last-child { border-bottom: none; }
+    .goal-problem-row:hover { background: rgba(255,255,255,0.02); }
+    .goal-problem-row.gp-solved { background: rgba(63,185,80,0.04); }
+    .goal-num { font-size: 11px; color: var(--text-muted); width: 18px; text-align: right; flex-shrink: 0; }
+    .goal-check {
+      width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 10px;
+    }
+    .goal-check.done { background: var(--solved); border-color: var(--solved); color: #fff; }
+    .goal-check.attempted-circle { border-color: var(--attempted); }
+    .gp-name { flex: 1; font-size: 13px; color: var(--text); text-decoration: none; font-weight: 500; transition: color 0.15s; }
+    .gp-name:hover { color: var(--accent); }
+    .gp-name.done { color: var(--solved); text-decoration: line-through; text-decoration-color: #3fb95088; }
+    .gp-contest { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+    .gp-rating { font-size: 12px; font-weight: 600; padding: 2px 6px; border-radius: 3px; flex-shrink: 0; }
+    .goal-all-done { text-align: center; padding: 18px; font-size: 14px; color: var(--solved); font-weight: 600; }
+
+    /* ── Dashboard ──────────────────────────────────────────────────────── */
+    .dashboard { display: flex; flex-direction: column; gap: 18px; }
+
+    .dash-top { display: grid; grid-template-columns: 300px 1fr; gap: 14px; align-items: stretch; }
+    .dash-stats { display: flex; flex-direction: column; gap: 14px; }
+    .dash-stats .dash-card { flex: 1; }
+
+    .dash-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+    }
+
+    /* XP card */
+    .xp-card {
+      border-color: #5b8cff55;
+      background: linear-gradient(135deg, #151829 0%, #1a1d27 60%);
+      position: relative; overflow: hidden;
+    }
+    .xp-card::before {
+      content: '';
+      position: absolute; top: -40px; right: -40px;
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #5b8cff18, transparent 70%);
+      pointer-events: none;
+    }
+    .cf-actual-rank { display: flex; flex-direction: column; gap: 6px; }
+    .cf-actual-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-secondary); margin-bottom: 2px; }
+    .cf-actual-row { display: flex; align-items: center; gap: 6px; }
+    .cf-actual-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .cf-actual-sublabel { font-size: 10px; color: var(--text-muted); width: 38px; flex-shrink: 0; }
+    .cf-actual-rating { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; line-height: 1; }
+    .cf-actual-rankname { font-size: 12px; font-weight: 600; }
+    .xp-rank-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .xp-rank-icon { font-size: 18px; }
+    .xp-rank-name { font-size: 13px; font-weight: 700; }
+    .xp-amount { font-size: 30px; font-weight: 800; color: var(--text); letter-spacing: -1.5px; margin-bottom: 12px; line-height: 1; }
+    .xp-amount-unit { font-size: 14px; font-weight: 500; color: var(--text-secondary); letter-spacing: 0; margin-left: 2px; }
+    .xp-bar-wrap { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+    .xp-bar { height: 100%; border-radius: 4px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+    .xp-next { font-size: 11px; color: var(--text-muted); }
+    .xp-formula {
+      margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .xp-formula-title { font-size: 10px; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 5px; }
+    .xp-info-wrap { position: relative; display: inline-flex; }
+    .xp-info-icon {
+      font-size: 10px; font-weight: 600; color: var(--accent);
+      border-bottom: 1px dashed var(--accent); cursor: default;
+      font-style: normal; white-space: nowrap;
+    }
+    .xp-tooltip {
+      display: none;
+      position: fixed;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 12px; z-index: 9999;
+      white-space: nowrap; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      pointer-events: none;
+    }
+    .xp-tt-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-secondary); margin-bottom: 8px; }
+    .xp-tt-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; border-bottom: 1px solid var(--border); }
+    .xp-tt-row:last-child { border-bottom: none; }
+    .xp-tt-rating { font-size: 12px; font-weight: 700; width: 38px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+    .xp-tt-bar-wrap { width: 70px; height: 6px; background: var(--bg); border-radius: 2px; overflow: hidden; flex-shrink: 0; }
+    .xp-tt-bar { height: 100%; border-radius: 2px; }
+    .xp-tt-val { font-size: 12px; font-weight: 800; width: 60px; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+    .xp-rank-table { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-top: 4px; }
+    .xp-rank-row-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 3px 6px; border-radius: 4px; font-size: 11px;
+    }
+    .xp-rank-row-item.current {
+      background: rgba(91,140,255,0.12); border: 1px solid rgba(91,140,255,0.25);
+    }
+
+    /* Stat cards */
+    .stat-card-label {
+      font-size: 10px; color: var(--text-secondary); font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px;
+    }
+    .stat-card-value { font-size: 36px; font-weight: 800; color: var(--text); letter-spacing: -2px; line-height: 1; }
+    .stat-card-sub { font-size: 11px; color: var(--text-muted); margin-top: 7px; }
+    .stat-card-icon { font-size: 22px; margin-bottom: 8px; }
+
+    /* Rating Distribution */
+    .dash-section-title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; color: var(--text-secondary); margin-bottom: 14px;
+    }
+    .dist-rows { display: flex; flex-direction: column; gap: 6px; }
+    .dist-row { display: flex; align-items: center; gap: 10px; }
+    .dist-label {
+      font-size: 11px; color: var(--text-secondary); font-weight: 600;
+      width: 50px; flex-shrink: 0; text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .dist-bar-wrap {
+      flex: 1; height: 14px; background: var(--bg); border-radius: 3px;
+      overflow: hidden; display: flex;
+    }
+    .dist-bar-solved { height: 100%; transition: width 0.6s ease; }
+    .dist-bar-attempted { height: 100%; opacity: 0.6; transition: width 0.6s ease; }
+    .dist-count { font-size: 11px; color: var(--text-muted); width: 38px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+
+    /* This week */
+    .week-empty { color: var(--text-muted); font-size: 13px; padding: 20px 0; text-align: center; }
+    .week-list { display: flex; flex-direction: column; }
+    .week-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 8px 0; border-bottom: 1px solid var(--border);
+    }
+    .week-item:last-child { border-bottom: none; }
+    .week-date { font-size: 11px; color: var(--text-muted); width: 32px; flex-shrink: 0; text-align: center; }
+    .week-name { flex: 1; min-width: 0; }
+    .week-name a { color: var(--text); text-decoration: none; font-weight: 500; font-size: 13px; transition: color 0.15s; }
+    .week-name a:hover { color: var(--accent); }
+    .week-contest { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .week-rating { font-size: 12px; font-weight: 600; padding: 2px 7px; border-radius: 4px; flex-shrink: 0; }
+
+    .dash-bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    .dash-no-data {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 60px 20px; color: var(--text-muted); gap: 10px; font-size: 13px;
+    }
+    .dash-no-data-icon { font-size: 36px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>⚡ CF Problem Browser</h1>
+  <div class="handle-area">
+    <input type="text" id="handleInput" placeholder="CF Handle" />
+    <button class="btn" onclick="loadUserData()">Load</button>
+    <button class="btn secondary" onclick="clearCache()">↺ Refresh Data</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside>
+    <div class="filter-group">
+      <h3>Status</h3>
+      <div class="toggle-group">
+        <button class="toggle-btn" data-status="all" onclick="setStatus('all')">All</button>
+        <button class="toggle-btn active" data-status="unsolved" onclick="setStatus('unsolved')">Unsolved</button>
+        <button class="toggle-btn" data-status="solved" onclick="setStatus('solved')">Solved</button>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <h3>Rating Range</h3>
+      <div class="rating-inputs">
+        <input type="number" id="ratingMin" value="1900" min="800" max="3500" step="100" onchange="saveAndFilter()" />
+        <span>—</span>
+        <input type="number" id="ratingMax" value="2500" min="800" max="3500" step="100" onchange="saveAndFilter()" />
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <h3>Contest Type</h3>
+      <div class="check-list">
+        <label class="check-item">
+          <input type="checkbox" id="div-div1" checked onchange="saveAndFilter()" />
+          <span class="checkmark"></span><span class="check-label">Div. 1</span>
+          <span class="div-badge cdiv1">D1</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" id="div-div12" checked onchange="saveAndFilter()" />
+          <span class="checkmark"></span><span class="check-label">Div. 1+2</span>
+          <span class="div-badge cdiv12">D1+2</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" id="div-div2" checked onchange="saveAndFilter()" />
+          <span class="checkmark"></span><span class="check-label">Div. 2</span>
+          <span class="div-badge cdiv2">D2</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" id="div-div3" onchange="saveAndFilter()" />
+          <span class="checkmark"></span><span class="check-label">Div. 3</span>
+          <span class="div-badge cdiv3">D3</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" id="div-div4" onchange="saveAndFilter()" />
+          <span class="checkmark"></span><span class="check-label">Div. 4</span>
+          <span class="div-badge cdiv4">D4</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" id="div-edu" checked onchange="saveAndFilter()" />
+          <span class="checkmark"></span><span class="check-label">Educational</span>
+          <span class="div-badge cedu">EDU</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" id="div-global" checked onchange="saveAndFilter()" />
+          <span class="checkmark"></span><span class="check-label">Global</span>
+          <span class="div-badge cother">GL</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" id="div-other" onchange="saveAndFilter()" />
+          <span class="checkmark"></span><span class="check-label">Other</span>
+          <span class="div-badge cother">—</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <h3>Problem Index</h3>
+      <div class="index-grid" id="indexGrid"></div>
+    </div>
+
+    <div class="filter-group">
+      <h3>Weekly Goal</h3>
+      <div class="goal-inputs">
+        <div class="goal-row">
+          <span>From top</span>
+          <input type="number" id="goalPool" value="100" min="10" max="500" step="10" />
+          <span>problems</span>
+        </div>
+        <div class="goal-row">
+          <span>Pick</span>
+          <input type="number" id="goalCount" value="5" min="1" max="20" />
+          <span>to solve</span>
+        </div>
+        <button class="btn-pick" onclick="pickGoalProblems()">Pick Problems</button>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <h3>Options</h3>
+      <div class="check-list">
+        <div class="switch-row">
+          <span class="switch-label">Hide Rating</span>
+          <label class="switch">
+            <input type="checkbox" id="hideRating" onchange="saveAndFilter()" />
+            <span class="switch-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div id="errorBar" class="error-bar" style="display:none;"></div>
+
+    <div class="tab-nav">
+      <button class="tab-btn active" id="tab-problems" onclick="switchTab('problems')">Problems</button>
+      <button class="tab-btn" id="tab-dashboard" onclick="switchTab('dashboard')">Dashboard</button>
+    </div>
+
+    <!-- Problems tab -->
+    <div id="problemsTab">
+      <div class="stats-bar">
+        <span>Showing <strong id="showCount">0</strong> problems</span>
+        <span id="solvedStats" style="color:var(--text-muted)"></span>
+        <span id="cacheInfo" class="cache-info"></span>
+      </div>
+      <div id="goalSection"></div>
+      <div id="content">
+        <div class="loading-wrap">
+          <div class="spinner"></div>
+          <div class="loading-msg">Enter your handle and click Load</div>
+        </div>
+      </div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+
+    <!-- Dashboard tab -->
+    <div id="dashboardTab" style="display:none;">
+      <div id="dashboardContent">
+        <div class="dash-no-data">
+          <div class="dash-no-data-icon">📊</div>
+          <div>Load your handle to see stats</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const CF_API = 'https://codeforces.com/api';
+const CACHE_TTL = 60 * 60 * 1000;
+const PAGE_SIZE = 50;
+
+let state = {
+  allProblems: [],
+  filtered: [],
+  solvedMap: {},
+  submissions: [],
+  page: 1,
+  dataLoaded: false,
+  goalProblems: [],
+  activeTab: 'problems',
+  userInfo: null,
+};
+
+// ─── XP / Rank System ──────────────────────────────────────────────────────────
+// XP = sum of ratings of all uniquely solved problems (e.g. 2000-rated problem = 2000 XP)
+const RANKS = [
+  { name: 'Newcomer',           icon: '🌱', minXP: 0,       color: '#808080' },
+  { name: 'Pupil',              icon: '📖', minXP: 3000,    color: '#00cc00' },
+  { name: 'Specialist',         icon: '⚙️',  minXP: 12000,   color: '#03a89e' },
+  { name: 'Expert',             icon: '🔷', minXP: 35000,   color: '#5b8cff' },
+  { name: 'Candidate Master',   icon: '💜', minXP: 90000,   color: '#aa00aa' },
+  { name: 'Master',             icon: '🔶', minXP: 200000,  color: '#ff8c00' },
+  { name: 'Int\'l Master',      icon: '🌟', minXP: 380000,  color: '#ff6030' },
+  { name: 'Grandmaster',        icon: '👑', minXP: 650000,  color: '#ff3030' },
+];
+
+// XP per problem scales exponentially with rating.
+// Formula: floor(((rating - 800) / 100) ^ 2.6)  (minimum 1 for rated problems)
+// e.g. 1600 → 155 XP,  1800 → 316 XP,  2000 → 549 XP,  2400 → 1426 XP,  2800 → 3032 XP
+const XP_TABLE = (() => {
+  const t = {};
+  for (let r = 800; r <= 3500; r += 100) {
+    t[r] = Math.max(1, Math.floor(Math.pow((r - 800) / 100, 2.6)));
+  }
+  return t;
+})();
+
+function problemXP(rating) {
+  if (!rating) return 0;
+  const bucket = Math.max(800, Math.min(3500, Math.round(rating / 100) * 100));
+  return XP_TABLE[bucket] ?? 1;
+}
+
+function computeXP(subs) {
+  const seen = new Set();
+  let xp = 0;
+  let count = 0;
+  for (const sub of subs) {
+    if (sub.verdict !== 'OK') continue;
+    const key = `${sub.problem.contestId}_${sub.problem.index}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (sub.problem.rating) {
+      xp += problemXP(sub.problem.rating);
+      count++;
+    }
+  }
+  return { xp, count };
+}
+
+function getRank(xp) {
+  let rank = RANKS[0];
+  for (const r of RANKS) {
+    if (xp >= r.minXP) rank = r;
+    else break;
+  }
+  const idx = RANKS.indexOf(rank);
+  const next = RANKS[idx + 1] || null;
+  return { rank, next, idx };
+}
+
+// ─── Streak ────────────────────────────────────────────────────────────────────
+function dayKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth()).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+}
+
+function computeStreak(subs) {
+  const days = new Set();
+  for (const sub of subs) {
+    if (sub.verdict === 'OK') {
+      days.add(dayKey(new Date(sub.creationTimeSeconds * 1000)));
+    }
+  }
+  const today = new Date();
+  let cursor = new Date(today);
+  // if no solve today yet, allow streak from yesterday
+  if (!days.has(dayKey(cursor))) {
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  let streak = 0;
+  while (days.has(dayKey(cursor))) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+    if (streak > 9999) break;
+  }
+  return streak;
+}
+
+// ─── This Week ─────────────────────────────────────────────────────────────────
+function getThisWeekSolves(subs) {
+  const since = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const seen = new Set();
+  const result = [];
+  for (const sub of [...subs].sort((a, b) => b.creationTimeSeconds - a.creationTimeSeconds)) {
+    if (sub.creationTimeSeconds * 1000 < since) continue;
+    if (sub.verdict !== 'OK') continue;
+    const key = `${sub.problem.contestId}_${sub.problem.index}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(sub);
+  }
+  return result;
+}
+
+// ─── Rating Distribution ───────────────────────────────────────────────────────
+const DIST_BUCKETS = [
+  { label: '≤1199', min: 0,    max: 1199 },
+  { label: '1200',  min: 1200, max: 1399 },
+  { label: '1400',  min: 1400, max: 1599 },
+  { label: '1600',  min: 1600, max: 1799 },
+  { label: '1800',  min: 1800, max: 1999 },
+  { label: '2000',  min: 2000, max: 2199 },
+  { label: '2200',  min: 2200, max: 2399 },
+  { label: '2400',  min: 2400, max: 2599 },
+  { label: '2600',  min: 2600, max: 2799 },
+  { label: '2800+', min: 2800, max: Infinity },
+];
+
+function computeRatingDistribution(subs) {
+  const solvedMap = {};
+  const attemptedMap = {};
+  for (const sub of subs) {
+    const key = `${sub.problem.contestId}_${sub.problem.index}`;
+    if (sub.verdict === 'OK') solvedMap[key] = sub.problem.rating || 0;
+    else if (!solvedMap[key]) attemptedMap[key] = sub.problem.rating || 0;
+  }
+  return DIST_BUCKETS.map(bucket => {
+    let solved = 0, attempted = 0;
+    for (const r of Object.values(solvedMap)) {
+      if (r >= bucket.min && r <= bucket.max) solved++;
+    }
+    for (const r of Object.values(attemptedMap)) {
+      if (r >= bucket.min && r <= bucket.max) attempted++;
+    }
+    return { ...bucket, solved, attempted };
+  });
+}
+
+// ─── Hardest Solved ────────────────────────────────────────────────────────────
+function computeHardestSolved(subs) {
+  const solved = new Set();
+  let max = 0;
+  let hardest = null;
+  for (const sub of subs) {
+    if (sub.verdict !== 'OK') continue;
+    const key = `${sub.problem.contestId}_${sub.problem.index}`;
+    if (solved.has(key)) continue;
+    solved.add(key);
+    if ((sub.problem.rating || 0) > max) {
+      max = sub.problem.rating || 0;
+      hardest = sub.problem;
+    }
+  }
+  return hardest;
+}
+
+// ─── Render Dashboard ──────────────────────────────────────────────────────────
+function renderDashboard() {
+  const el = document.getElementById('dashboardContent');
+  if (!state.dataLoaded || !state.submissions.length) {
+    el.innerHTML = `<div class="dash-no-data">
+      <div class="dash-no-data-icon">📊</div>
+      <div>Load your handle to see stats</div>
+    </div>`;
+    return;
+  }
+
+  const subs = state.submissions;
+  const { xp, count: xpCount, avg: xpAvg } = computeXP(subs);
+  const { rank, next } = getRank(xp);
+  const streak = computeStreak(subs);
+  const thisWeek = getThisWeekSolves(subs);
+  const dist = computeRatingDistribution(subs);
+  const hardest = computeHardestSolved(subs);
+  const totalSolved = new Set(subs.filter(s => s.verdict === 'OK').map(s => `${s.problem.contestId}_${s.problem.index}`)).size;
+
+  // XP bar progress to next rank
+  const xpInRank = xp - rank.minXP;
+  const xpToNext = next ? next.minXP - rank.minXP : 1;
+  const pct = next ? Math.min(100, Math.round((xpInRank / xpToNext) * 100)) : 100;
+
+  // CF actual rank info
+  const ui = state.userInfo;
+  const cfRankHtml = ui ? (() => {
+    const curColor = cfRankColor(ui.rank);
+    const maxColor = cfRankColor(ui.maxRank);
+    const cap = s => s ? s.replace(/\b\w/g, c => c.toUpperCase()) : '';
+    const hasPeak = ui.maxRating && ui.maxRating !== ui.rating;
+    return `<div class="cf-actual-rank">
+      <div class="cf-actual-label">Codeforces Rating</div>
+      <div class="cf-actual-row">
+        <span class="cf-actual-dot" style="background:${curColor}"></span>
+        <span class="cf-actual-sublabel">Now</span>
+        <span class="cf-actual-rating" style="color:${curColor}">${ui.rating ?? '—'}</span>
+        <span class="cf-actual-rankname" style="color:${curColor}">${cap(ui.rank)}</span>
+      </div>
+      ${hasPeak ? `<div class="cf-actual-row">
+        <span class="cf-actual-dot" style="background:${maxColor}"></span>
+        <span class="cf-actual-sublabel">Peak</span>
+        <span class="cf-actual-rating" style="color:${maxColor}">${ui.maxRating}</span>
+        <span class="cf-actual-rankname" style="color:${maxColor}">${cap(ui.maxRank)}</span>
+      </div>` : ''}
+    </div>`;
+  })() : '';
+
+  // XP card
+  const xpCard = `<div class="dash-card xp-card">
+    ${cfRankHtml}
+    <div class="xp-rank-row" style="${ui ? 'margin-top:10px;padding-top:10px;border-top:1px solid var(--border)' : ''}">
+      <span class="xp-rank-icon">${rank.icon}</span>
+      <span class="xp-rank-name" style="color:${rank.color}">${rank.name}</span>
+      <span style="font-size:10px;color:var(--text-muted);margin-left:4px">Site rank</span>
+    </div>
+    <div class="xp-amount">${xp.toLocaleString()}<span class="xp-amount-unit">XP</span></div>
+    <div class="xp-bar-wrap">
+      <div class="xp-bar" style="width:${pct}%;background:linear-gradient(90deg,${rank.color}99,${rank.color})"></div>
+    </div>
+    <div class="xp-next">${next
+      ? `${(next.minXP - xp).toLocaleString()} XP to ${next.icon} ${next.name}`
+      : 'Max rank reached — legend!'
+    }</div>
+    <div class="xp-formula">
+      <div class="xp-formula-title">
+        Site XP — 첫 AC 기준, 난이도 지수 반영 · ${xpCount.toLocaleString()}문제
+        <span class="xp-info-wrap">
+          <i class="xp-info-icon">XP 기준표 ▾</i>
+          <div class="xp-tooltip">
+            <div class="xp-tt-title">Rating → XP 기준표</div>
+            ${[1200,1400,1600,1800,2000,2200,2400,2600,2800,3000].map(r => {
+              const px = problemXP(r);
+              const maxPx = problemXP(3000);
+              const w = Math.round(px / maxPx * 100);
+              const c = ratingColor(r);
+              return `<div class="xp-tt-row">
+                <span class="xp-tt-rating" style="color:${c}">${r}</span>
+                <div class="xp-tt-bar-wrap"><div class="xp-tt-bar" style="width:${w}%;background:${c}"></div></div>
+                <span class="xp-tt-val" style="color:${c}">+${px.toLocaleString()} XP</span>
+              </div>`;
+            }).join('')}
+          </div>
+        </span>
+      </div>
+    </div>
+    <div class="xp-rank-table">
+      ${RANKS.map(r => `<div class="xp-rank-row-item ${r === rank ? 'current' : ''}">
+        <span>${r.icon} <span style="color:${r.color};font-weight:600">${r.name}</span></span>
+        <span style="color:var(--text-muted);font-size:10px">${r.minXP.toLocaleString()}</span>
+      </div>`).join('')}
+    </div>
+  </div>`;
+
+  // Stat cards
+  const statCards = [
+    {
+      icon: '✅',
+      label: 'Total Solved',
+      value: totalSolved.toLocaleString(),
+      sub: 'unique problems',
+    },
+    {
+      icon: '🔥',
+      label: 'Streak',
+      value: streak,
+      sub: streak === 1 ? 'day in a row' : 'days in a row',
+    },
+    {
+      icon: '🏆',
+      label: 'Hardest Solved',
+      value: hardest ? (hardest.rating || '?') : '—',
+      sub: hardest ? hardest.name : 'no data',
+    },
+  ].map(s => `<div class="dash-card">
+    <div class="stat-card-icon">${s.icon}</div>
+    <div class="stat-card-label">${s.label}</div>
+    <div class="stat-card-value">${s.value}</div>
+    <div class="stat-card-sub">${s.sub}</div>
+  </div>`).join('');
+
+  // Rating distribution chart
+  const distMax = Math.max(...dist.map(b => b.solved + b.attempted), 1);
+  const distRows = dist.filter(b => b.solved + b.attempted > 0).map(b => {
+    const solvedW = (b.solved / distMax * 100).toFixed(1);
+    const attemptedW = (b.attempted / distMax * 100).toFixed(1);
+    const color = ratingColor((b.min + Math.min(b.max, b.min + 199)) / 2);
+    return `<div class="dist-row">
+      <span class="dist-label">${b.label}</span>
+      <div class="dist-bar-wrap">
+        <div class="dist-bar-solved" style="width:${solvedW}%;background:${color};"></div>
+        <div class="dist-bar-attempted" style="width:${attemptedW}%;background:${color};"></div>
+      </div>
+      <span class="dist-count">${b.solved}${b.attempted ? ` <span style="color:var(--attempted);font-size:10px">+${b.attempted}</span>` : ''}</span>
+    </div>`;
+  }).join('') || `<div class="week-empty">No solved problems yet</div>`;
+
+  const distCard = `<div class="dash-card dist-card">
+    <div class="dash-section-title">Rating Distribution <span style="font-weight:400;color:var(--text-muted)">  solved / <span style="color:var(--attempted)">attempted</span></span></div>
+    <div class="dist-rows">${distRows}</div>
+  </div>`;
+
+  // This week
+  const weekRows = thisWeek.map(sub => {
+    const d = new Date(sub.creationTimeSeconds * 1000);
+    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const url = `https://codeforces.com/contest/${sub.problem.contestId}/problem/${sub.problem.index}`;
+    const color = ratingColor(sub.problem.rating);
+    const ratingHtml = sub.problem.rating
+      ? `<span class="week-rating" style="color:${color};background:${color}22">${sub.problem.rating}</span>`
+      : '';
+    return `<div class="week-item">
+      <span class="week-date">${dateStr}</span>
+      <div class="week-name">
+        <a href="${url}" target="_blank">${sub.problem.index}. ${sub.problem.name}</a>
+        <div class="week-contest">#${sub.problem.contestId}</div>
+      </div>
+      ${ratingHtml}
+    </div>`;
+  }).join('');
+
+  const weekCard = `<div class="dash-card week-card">
+    <div class="dash-section-title">Last 7 Days — ${thisWeek.length} solved</div>
+    ${thisWeek.length === 0
+      ? `<div class="week-empty">No problems solved in the last 7 days</div>`
+      : `<div class="week-list">${weekRows}</div>`
+    }
+  </div>`;
+
+  el.innerHTML = `<div class="dashboard">
+    <div class="dash-top">${xpCard}<div class="dash-stats">${statCards}</div></div>
+    <div class="dash-bottom">${distCard}${weekCard}</div>
+  </div>`;
+}
+
+// ─── Tab Switching ─────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  state.activeTab = tab;
+  document.getElementById('tab-problems').classList.toggle('active', tab === 'problems');
+  document.getElementById('tab-dashboard').classList.toggle('active', tab === 'dashboard');
+  document.getElementById('problemsTab').style.display = tab === 'problems' ? '' : 'none';
+  document.getElementById('dashboardTab').style.display = tab === 'dashboard' ? '' : 'none';
+  if (tab === 'dashboard') renderDashboard();
+}
+
+// ─── Settings ──────────────────────────────────────────────────────────────────
+function defaultSettings() {
+  return {
+    handle: 'prarie',
+    ratingMin: 1900, ratingMax: 2500,
+    solvedStatus: 'unsolved',
+    divisions: { div1: true, div12: true, div2: true, div3: false, div4: false, edu: true, global: true, other: false },
+    indices: { A: true, B: true, C: true, D: true, E: true, F: true, G: false, H: false },
+    hideRating: false,
+  };
+}
+
+function loadSettings() {
+  try {
+    const s = localStorage.getItem('cf-settings');
+    if (s) return Object.assign(defaultSettings(), JSON.parse(s));
+  } catch {}
+  return defaultSettings();
+}
+
+function saveSettings() {
+  localStorage.setItem('cf-settings', JSON.stringify(getSettingsFromUI()));
+}
+
+function getSettingsFromUI() {
+  return {
+    handle: document.getElementById('handleInput').value.trim(),
+    ratingMin: parseInt(document.getElementById('ratingMin').value) || 800,
+    ratingMax: parseInt(document.getElementById('ratingMax').value) || 3500,
+    solvedStatus: document.querySelector('.toggle-btn.active')?.dataset.status || 'unsolved',
+    divisions: {
+      div1: document.getElementById('div-div1').checked,
+      div12: document.getElementById('div-div12').checked,
+      div2: document.getElementById('div-div2').checked,
+      div3: document.getElementById('div-div3').checked,
+      div4: document.getElementById('div-div4').checked,
+      edu: document.getElementById('div-edu').checked,
+      global: document.getElementById('div-global').checked,
+      other: document.getElementById('div-other').checked,
+    },
+    indices: getIndexSettings(),
+    hideRating: document.getElementById('hideRating').checked,
+  };
+}
+
+function getIndexSettings() {
+  const result = {};
+  document.querySelectorAll('.idx-btn').forEach(btn => {
+    result[btn.dataset.idx] = btn.classList.contains('active');
+  });
+  return result;
+}
+
+function applySettings(s) {
+  document.getElementById('handleInput').value = s.handle;
+  document.getElementById('ratingMin').value = s.ratingMin;
+  document.getElementById('ratingMax').value = s.ratingMax;
+  document.getElementById('hideRating').checked = s.hideRating;
+  document.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.status === s.solvedStatus);
+  });
+  for (const [key, val] of Object.entries(s.divisions)) {
+    const el = document.getElementById(`div-${key}`);
+    if (el) el.checked = val;
+  }
+  document.querySelectorAll('.idx-btn').forEach(btn => {
+    const active = s.indices[btn.dataset.idx] !== undefined ? s.indices[btn.dataset.idx] : true;
+    btn.classList.toggle('active', active);
+  });
+}
+
+function buildIndexGrid(savedIndices) {
+  const indices = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+  const grid = document.getElementById('indexGrid');
+  grid.innerHTML = '';
+  indices.forEach(idx => {
+    const btn = document.createElement('button');
+    btn.className = 'idx-btn';
+    btn.dataset.idx = idx;
+    btn.textContent = idx;
+    const active = savedIndices ? (savedIndices[idx] !== undefined ? savedIndices[idx] : ['A','B','C','D','E','F'].includes(idx)) : ['A','B','C','D','E','F'].includes(idx);
+    if (active) btn.classList.add('active');
+    btn.onclick = () => { btn.classList.toggle('active'); saveAndFilter(); };
+    grid.appendChild(btn);
+  });
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────────────────
+function parseContestDivision(name) {
+  if (!name) return 'other';
+  if (/Div\. 1 \+ Div\. 2/i.test(name)) return 'div12';
+  if (/Div\. 1/i.test(name)) return 'div1';
+  if (/Div\. 4/i.test(name)) return 'div4';
+  if (/Div\. 3/i.test(name)) return 'div3';
+  if (/Div\. 2/i.test(name)) return 'div2';
+  if (/Educational/i.test(name)) return 'edu';
+  if (/Global Round/i.test(name)) return 'global';
+  return 'other';
+}
+
+function cfRankColor(rank) {
+  if (!rank) return '#808080';
+  const r = rank.toLowerCase();
+  if (r.includes('legendary grandmaster')) return '#ff0000';
+  if (r.includes('international grandmaster')) return '#ff0000';
+  if (r.includes('grandmaster')) return '#ff3030';
+  if (r.includes('candidate master')) return '#aa00aa';
+  if (r.includes('international master')) return '#ff8c00';
+  if (r.includes('master')) return '#ff8c00';
+  if (r.includes('expert')) return '#5b8cff';
+  if (r.includes('specialist')) return '#03a89e';
+  if (r.includes('pupil')) return '#00cc00';
+  return '#808080';
+}
+
+function ratingColor(r) {
+  if (!r) return '#7d8590';
+  if (r < 1200) return '#808080';
+  if (r < 1400) return '#00cc00';
+  if (r < 1600) return '#03a89e';
+  if (r < 1900) return '#0000ff';
+  if (r < 2100) return '#aa00aa';
+  if (r < 2400) return '#ff8c00';
+  return '#ff0000';
+}
+
+function cacheGet(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const { data, ts } = JSON.parse(raw);
+    if (Date.now() - ts > CACHE_TTL) return null;
+    return data;
+  } catch { return null; }
+}
+
+function cacheSet(key, data) {
+  try { localStorage.setItem(key, JSON.stringify({ data, ts: Date.now() })); } catch {}
+}
+
+function getCacheAge(key) {
+  try {
+    const { ts } = JSON.parse(localStorage.getItem(key));
+    const mins = Math.floor((Date.now() - ts) / 60000);
+    return mins < 1 ? 'just now' : `${mins}m ago`;
+  } catch { return null; }
+}
+
+// ─── API ───────────────────────────────────────────────────────────────────────
+async function apiFetch(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+  if (json.status !== 'OK') throw new Error(json.comment || 'API error');
+  return json.result;
+}
+
+async function loadAllData() {
+  setLoading('Loading contest list...');
+  let contests = cacheGet('cf-contests');
+  if (!contests) {
+    contests = await apiFetch(`${CF_API}/contest.list?gym=false`);
+    cacheSet('cf-contests', contests);
+  }
+  const contestMap = {};
+  for (const c of contests) {
+    if (c.phase === 'FINISHED')
+      contestMap[c.id] = { name: c.name, div: parseContestDivision(c.name) };
+  }
+
+  setLoading('Loading problems...');
+  let problemData = cacheGet('cf-problems');
+  if (!problemData) {
+    problemData = await apiFetch(`${CF_API}/problemset.problems`);
+    cacheSet('cf-problems', problemData);
+  }
+
+  const merged = [];
+  for (const p of problemData.problems) {
+    const c = contestMap[p.contestId];
+    if (!c || p.contestId > 100000) continue;
+    merged.push({
+      id: `${p.contestId}_${p.index}`,
+      contestId: p.contestId,
+      index: p.index,
+      name: p.name,
+      rating: p.rating || null,
+      contestName: c.name,
+      div: c.div,
+      url: `https://codeforces.com/contest/${p.contestId}/problem/${p.index}`,
+      contestUrl: `https://codeforces.com/contest/${p.contestId}`,
+    });
+  }
+  merged.sort((a, b) => b.contestId - a.contestId);
+  state.allProblems = merged;
+
+  const age = getCacheAge('cf-problems');
+  document.getElementById('cacheInfo').textContent = age ? `Data cached ${age}` : '';
+}
+
+async function loadUserStatus(handle) {
+  if (!handle) return;
+  setLoading(`Loading submissions for ${handle}...`);
+  let subs = cacheGet(`cf-status-${handle}`);
+  if (!subs) {
+    subs = await apiFetch(`${CF_API}/user.status?handle=${encodeURIComponent(handle)}&from=1&count=10000`);
+    cacheSet(`cf-status-${handle}`, subs);
+  }
+  state.submissions = subs;
+  state.solvedMap = {};
+  for (const sub of subs) {
+    const key = `${sub.problem.contestId}_${sub.problem.index}`;
+    if (sub.verdict === 'OK') state.solvedMap[key] = 'solved';
+    else if (!state.solvedMap[key]) state.solvedMap[key] = 'attempted';
+  }
+}
+
+async function loadUserInfo(handle) {
+  let info = cacheGet(`cf-info-${handle}`);
+  if (!info) {
+    const result = await apiFetch(`${CF_API}/user.info?handles=${encodeURIComponent(handle)}`);
+    info = result[0];
+    cacheSet(`cf-info-${handle}`, info);
+  }
+  state.userInfo = info;
+}
+
+async function loadUserData() {
+  const handle = document.getElementById('handleInput').value.trim();
+  if (!handle) { showError('Please enter a handle'); return; }
+  hideError();
+  state.userInfo = null;
+  state.submissions = [];
+  state.solvedMap = {};
+  try {
+    await loadAllData();
+    await Promise.all([loadUserStatus(handle), loadUserInfo(handle)]);
+    state.dataLoaded = true;
+    saveSettings();
+    restoreGoal();
+    filterAndRender();
+    if (state.activeTab === 'dashboard') renderDashboard();
+  } catch (e) {
+    console.error(e);
+    showError(`Error: ${e.message}`);
+    setContent(`<div class="empty-wrap">⚠️ Failed to load data.</div>`);
+  }
+}
+
+function clearCache() {
+  const keys = Object.keys(localStorage).filter(k =>
+    k === 'cf-contests' || k === 'cf-problems' || k.startsWith('cf-status-') || k.startsWith('cf-info-')
+  );
+  keys.forEach(k => localStorage.removeItem(k));
+  state.dataLoaded = false;
+  state.allProblems = [];
+  state.solvedMap = {};
+  state.submissions = [];
+  setContent(`<div class="empty-wrap"><div class="spinner"></div><div class="loading-msg">Cache cleared. Reloading...</div></div>`);
+  loadUserData();
+}
+
+// ─── Filter & Render ───────────────────────────────────────────────────────────
+function filterAndRender() {
+  if (!state.dataLoaded) return;
+  const s = getSettingsFromUI();
+  const activeIndices = new Set(Object.entries(s.indices).filter(([, v]) => v).map(([k]) => k));
+
+  state.filtered = state.allProblems.filter(p => {
+    if (!s.divisions[p.div]) return false;
+    if (!activeIndices.has(p.index.replace(/[^A-Z]/g, ''))) return false;
+    if (p.rating === null) return false;
+    if (p.rating < s.ratingMin || p.rating > s.ratingMax) return false;
+    const status = state.solvedMap[p.id] || 'unsolved';
+    if (s.solvedStatus === 'solved' && status !== 'solved') return false;
+    if (s.solvedStatus === 'unsolved' && status === 'solved') return false;
+    return true;
+  });
+
+  state.page = 1;
+  renderPage(s);
+  renderGoal();
+}
+
+function renderPage(s) {
+  if (!s) s = getSettingsFromUI();
+  const total = state.filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = Math.min(state.page, totalPages);
+  const items = state.filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  document.getElementById('showCount').textContent = total.toLocaleString();
+  const solved = state.filtered.filter(p => state.solvedMap[p.id] === 'solved').length;
+  const attempted = state.filtered.filter(p => state.solvedMap[p.id] === 'attempted').length;
+  document.getElementById('solvedStats').textContent =
+    total > 0 ? `✓ ${solved}  ± ${attempted}  ○ ${total - solved - attempted}` : '';
+
+  if (items.length === 0) {
+    setContent(`<div class="empty-wrap">No problems match your filters.</div>`);
+    renderPagination(0, 1, 1);
+    return;
+  }
+
+  const rows = items.map(p => {
+    const status = state.solvedMap[p.id] || 'unsolved';
+    const dotClass = status === 'solved' ? 'solved' : status === 'attempted' ? 'attempted' : 'unsolved';
+    const linkClass = status === 'solved' ? 'solved-link' : status === 'attempted' ? 'attempted-link' : '';
+    const divLabel = { div1:'D1', div12:'D1+2', div2:'D2', div3:'D3', div4:'D4', edu:'EDU', global:'GL', other:'—' }[p.div] || '—';
+    const ratingCell = s.hideRating
+      ? '<td>—</td>'
+      : `<td><span class="rating-badge" style="color:${ratingColor(p.rating)};background:${ratingColor(p.rating)}22">${p.rating || '?'}</span></td>`;
+    return `<tr>
+      <td><span class="status-dot ${dotClass}"></span></td>
+      <td><div style="display:flex;align-items:center;gap:4px;">
+        <a href="${p.contestUrl}" target="_blank" class="contest-name" title="${p.contestName}">${p.contestName}</a>
+        <span class="contest-div c${p.div}">${divLabel}</span>
+      </div></td>
+      <td><a href="${p.url}" target="_blank" class="problem-link ${linkClass}">
+        <span class="prob-index">${p.index}</span>${p.name}
+      </a></td>
+      ${ratingCell}
+    </tr>`;
+  }).join('');
+
+  setContent(`<div class="table-wrap"><table>
+    <thead><tr>
+      <th style="width:28px"></th><th>Contest</th><th>Problem</th><th>Rating</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`);
+  renderPagination(total, page, totalPages);
+}
+
+function renderPagination(total, page, totalPages) {
+  const el = document.getElementById('pagination');
+  if (totalPages <= 1) { el.innerHTML = ''; return; }
+  let html = `<button class="page-btn" onclick="goPage(${page-1})" ${page<=1?'disabled':''}>‹ Prev</button>`;
+  let pages = new Set([1, totalPages]);
+  for (let i = Math.max(1, page-2); i <= Math.min(totalPages, page+2); i++) pages.add(i);
+  pages = [...pages].sort((a,b)=>a-b);
+  let prev = null;
+  for (const p of pages) {
+    if (prev && p - prev > 1) html += `<span class="page-info">…</span>`;
+    html += `<button class="page-btn ${p===page?'active':''}" onclick="goPage(${p})">${p}</button>`;
+    prev = p;
+  }
+  html += `<button class="page-btn" onclick="goPage(${page+1})" ${page>=totalPages?'disabled':''}>Next ›</button>`;
+  el.innerHTML = html;
+}
+
+function goPage(p) { state.page = p; renderPage(); window.scrollTo(0, 0); }
+
+// ─── Weekly Goal ───────────────────────────────────────────────────────────────
+function loadGoal() {
+  try { const s = localStorage.getItem('cf-goal'); if (s) return JSON.parse(s); } catch {}
+  return [];
+}
+function saveGoal(ids) { localStorage.setItem('cf-goal', JSON.stringify(ids)); }
+
+function pickGoalProblems() {
+  if (!state.dataLoaded) { showError('Load data first'); return; }
+  const pool = parseInt(document.getElementById('goalPool').value) || 100;
+  const count = parseInt(document.getElementById('goalCount').value) || 5;
+  const s = getSettingsFromUI();
+  const activeIndices = new Set(Object.entries(s.indices).filter(([, v]) => v).map(([k]) => k));
+
+  const candidates = state.allProblems.filter(p => {
+    if (!s.divisions[p.div]) return false;
+    if (!activeIndices.has(p.index.replace(/[^A-Z]/g, ''))) return false;
+    if (p.rating === null || p.rating < s.ratingMin || p.rating > s.ratingMax) return false;
+    return state.solvedMap[p.id] !== 'solved';
+  });
+
+  const topN = candidates.slice(0, pool);
+  if (topN.length === 0) { showError('No unsolved problems found. Adjust filters.'); return; }
+  const picks = topN.length <= count ? [...topN] : shufflePick(topN, count);
+  state.goalProblems = picks;
+  saveGoal(picks.map(p => p.id));
+  renderGoal();
+}
+
+function shufflePick(arr, n) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a.slice(0, n);
+}
+
+function rerollGoal() { pickGoalProblems(); }
+
+function clearGoal() {
+  state.goalProblems = [];
+  localStorage.removeItem('cf-goal');
+  renderGoal();
+}
+
+function restoreGoal() {
+  const ids = loadGoal();
+  if (!ids.length) return;
+  const problemMap = Object.fromEntries(state.allProblems.map(p => [p.id, p]));
+  state.goalProblems = ids.map(id => problemMap[id]).filter(Boolean);
+  renderGoal();
+}
+
+function renderGoal() {
+  const el = document.getElementById('goalSection');
+  if (!state.goalProblems.length) { el.innerHTML = ''; return; }
+
+  const s = getSettingsFromUI();
+  const total = state.goalProblems.length;
+  const solvedCount = state.goalProblems.filter(p => state.solvedMap[p.id] === 'solved').length;
+  const pct = Math.round((solvedCount / total) * 100);
+  const allDone = solvedCount === total;
+
+  const rows = state.goalProblems.map((p, i) => {
+    const status = state.solvedMap[p.id] || 'unsolved';
+    const isDone = status === 'solved';
+    const isAttempted = status === 'attempted';
+    const checkClass = isDone ? 'done' : isAttempted ? 'attempted-circle' : '';
+    const divLabel = { div1:'D1', div12:'D1+2', div2:'D2', div3:'D3', div4:'D4', edu:'EDU', global:'GL', other:'—' }[p.div] || '—';
+    const ratingHtml = s.hideRating ? '' : `<span class="gp-rating" style="color:${ratingColor(p.rating)};background:${ratingColor(p.rating)}22">${p.rating || '?'}</span>`;
+    return `<div class="goal-problem-row ${isDone ? 'gp-solved' : ''}">
+      <span class="goal-num">${i + 1}</span>
+      <span class="goal-check ${checkClass}">${isDone ? '✓' : ''}</span>
+      <a href="${p.url}" target="_blank" class="gp-name ${isDone ? 'done' : ''}">${p.index}. ${p.name}</a>
+      <span class="gp-contest">${divLabel} · #${p.contestId}</span>
+      ${ratingHtml}
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `<div class="goal-panel">
+    <div class="goal-header">
+      <span class="goal-title">Weekly Goal</span>
+      <span class="goal-progress-text">${solvedCount}/${total}</span>
+      <div class="goal-progress-bar-wrap"><div class="goal-progress-bar" style="width:${pct}%"></div></div>
+      <button class="goal-reroll-btn" onclick="rerollGoal()">Reroll</button>
+      <button class="goal-clear-btn" onclick="clearGoal()">Clear</button>
+    </div>
+    ${allDone
+      ? `<div class="goal-all-done">All done! Great work! 🎉</div>`
+      : `<div class="goal-problems">${rows}</div>`}
+  </div>`;
+}
+
+// ─── UI Helpers ────────────────────────────────────────────────────────────────
+function setStatus(status) {
+  document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.status === status));
+  saveAndFilter();
+}
+function saveAndFilter() { saveSettings(); filterAndRender(); }
+function setLoading(msg) { setContent(`<div class="loading-wrap"><div class="spinner"></div><div class="loading-msg">${msg}</div></div>`); }
+function setContent(html) { document.getElementById('content').innerHTML = html; }
+function showError(msg) { const el = document.getElementById('errorBar'); el.textContent = msg; el.style.display = 'block'; }
+function hideError() { document.getElementById('errorBar').style.display = 'none'; }
+
+// ─── Init ──────────────────────────────────────────────────────────────────────
+function init() {
+  const s = loadSettings();
+  buildIndexGrid(s.indices);
+  applySettings(s);
+  if (s.handle) loadUserData();
+}
+
+init();
+
+// ─── Tooltip (fixed position, not clipped by card) ─────────────────────────
+document.addEventListener('mouseover', e => {
+  const wrap = e.target.closest('.xp-info-wrap');
+  if (!wrap) return;
+  const tooltip = wrap.querySelector('.xp-tooltip');
+  if (!tooltip) return;
+  const rect = wrap.getBoundingClientRect();
+  tooltip.style.display = 'block';
+  // position above the icon, centered
+  tooltip.style.left = '0px';
+  tooltip.style.top = '0px';
+  // measure after display
+  requestAnimationFrame(() => {
+    const tw = tooltip.offsetWidth;
+    const th = tooltip.offsetHeight;
+    let left = rect.left + rect.width / 2 - tw / 2;
+    let top = rect.top - th - 10;
+    // keep within viewport
+    left = Math.max(8, Math.min(left, window.innerWidth - tw - 8));
+    if (top < 8) top = rect.bottom + 10;
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = top + 'px';
+  });
+});
+
+document.addEventListener('mouseleave', e => {
+  const wrap = e.target.closest('.xp-info-wrap');
+  if (!wrap) return;
+  const tooltip = wrap.querySelector('.xp-tooltip');
+  if (tooltip) tooltip.style.display = 'none';
+}, true);
+</script>
+</body>
+</html>
